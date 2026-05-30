@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://q0n0gikp4spy" path="res://Pebble_2.PNG" id="4_1bvp3"]
 [ext_resource type="Script" uid="uid://bprqloc6v2v1l" path="res://PebbleCamera2D.gd" id="5_lquwl"]
 [ext_resource type="Script" uid="uid://bl5ednj3kkm3l" path="res://WaterSegmentManager.gd" id="6_7mycd"]
+[ext_resource type="Script" uid="uid://cyf8h8i2muxiu" path="res://DistanceMarkerManager.gd" id="7_272bh"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
 radius = 12.0
@@ -35,4 +36,9 @@ target_path = NodePath("../TestPebbleCharacter2D")
 [node name="WaterSegmentManager" type="Node2D" parent="." unique_id=1658399412]
 script = ExtResource("6_7mycd")
 template_water_path = NodePath("../HookeWater2D")
+target_path = NodePath("../TestPebbleCharacter2D")
+initial_left_x = -1200.0
+
+[node name="DistanceMarkerManager" type="Node2D" parent="." unique_id=1796149517]
+script = ExtResource("7_272bh")
 target_path = NodePath("../TestPebbleCharacter2D")

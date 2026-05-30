@@ -6,8 +6,8 @@ class_name HookeWater2D
 # Single-node Hooke spring water surface for Pebble Hedz water-feel testing.
 
 @export_group("Surface")
-@export var surface_width: float = 1150.0
-@export var spring_count: int = 140
+@export var surface_width: float = 8000
+@export var spring_count: int = 560
 @export var rest_y: float = 0.0
 @export var water_depth: float = 320.0
 

@@ -35,15 +35,15 @@ class_name TestPebbleCharacter
 # Basic projectile motion after launch.
 @export var gravity: float = 980.0
 @export var air_drag: float = 0.995
-@export var horizontal_drag_on_skip: float = 0.92
+@export var horizontal_drag_on_skip: float = 0.97
 
 @export_group("Water Impact")
 # Controls how the pebble reacts when crossing the animated water surface.
 @export var impact_min_speed: float = 80.0
 @export var impact_cooldown: float = 0.16
-@export var skip_bounce_factor: float = 0.28
-@export var min_bounce_velocity: float = 230.0
-@export var max_bounce_velocity: float = 520.0
+@export var skip_bounce_factor: float = 0.22
+@export var min_bounce_velocity: float = 120.0
+@export var max_bounce_velocity: float = 360.0
 @export var water_impulse_multiplier: float = 1.0
 
 enum LaunchState {
