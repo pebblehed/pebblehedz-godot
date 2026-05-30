@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://b61pf3ta7nsn3" path="res://HookeWater2D.gd" id="2_h2yge"]
 [ext_resource type="Script" uid="uid://ctyajg0utm1du" path="res://TestPebbleCharacter.gd" id="3_h2yge"]
 [ext_resource type="Texture2D" uid="uid://q0n0gikp4spy" path="res://Pebble_2.PNG" id="4_1bvp3"]
+[ext_resource type="Script" uid="uid://bprqloc6v2v1l" path="res://PebbleCamera2D.gd" id="5_lquwl"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
 radius = 12.0
@@ -25,3 +26,7 @@ shape = SubResource("CircleShape2D_1bvp3")
 [node name="Sprite2D" type="Sprite2D" parent="TestPebbleCharacter2D" unique_id=632548941]
 scale = Vector2(0.15, 0.15)
 texture = ExtResource("4_1bvp3")
+
+[node name="PebbleCamera2D" type="Camera2D" parent="." unique_id=1896315666]
+script = ExtResource("5_lquwl")
+target_path = NodePath("../TestPebbleCharacter2D")
