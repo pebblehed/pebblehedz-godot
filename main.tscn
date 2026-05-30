@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://ctyajg0utm1du" path="res://TestPebbleCharacter.gd" id="3_h2yge"]
 [ext_resource type="Texture2D" uid="uid://q0n0gikp4spy" path="res://Pebble_2.PNG" id="4_1bvp3"]
 [ext_resource type="Script" uid="uid://bprqloc6v2v1l" path="res://PebbleCamera2D.gd" id="5_lquwl"]
+[ext_resource type="Script" uid="uid://bl5ednj3kkm3l" path="res://WaterSegmentManager.gd" id="6_7mycd"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
 radius = 12.0
@@ -18,7 +19,7 @@ script = ExtResource("2_h2yge")
 
 [node name="TestPebbleCharacter2D" type="CharacterBody2D" parent="." unique_id=243539534]
 script = ExtResource("3_h2yge")
-water_path = NodePath("../HookeWater2D")
+water_path = NodePath("../WaterSegmentManager")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="TestPebbleCharacter2D" unique_id=494423269]
 shape = SubResource("CircleShape2D_1bvp3")
@@ -29,4 +30,9 @@ texture = ExtResource("4_1bvp3")
 
 [node name="PebbleCamera2D" type="Camera2D" parent="." unique_id=1896315666]
 script = ExtResource("5_lquwl")
+target_path = NodePath("../TestPebbleCharacter2D")
+
+[node name="WaterSegmentManager" type="Node2D" parent="." unique_id=1658399412]
+script = ExtResource("6_7mycd")
+template_water_path = NodePath("../HookeWater2D")
 target_path = NodePath("../TestPebbleCharacter2D")

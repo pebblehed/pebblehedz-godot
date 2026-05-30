@@ -53,7 +53,11 @@ enum LaunchState {
 }
 
 var launch_state: LaunchState = LaunchState.ANGLE_SELECT
-var water: HookeWater2D
+
+# Water can now be either:
+# - one water node
+# - endless water manager
+var water: Node
 
 var current_angle: float = 20.0
 var locked_angle: float = 20.0
@@ -67,8 +71,10 @@ var was_above_surface: bool = true
 
 
 func _ready() -> void:
+	
 	# Connect this pebble to the existing Hooke water node.
-	water = get_node_or_null(water_path) as HookeWater2D
+	# Resolve whichever water system we are using.
+	water = get_node_or_null(water_path)
 
 	# Always begin from a controlled launch-ready state.
 	reset_pebble()
