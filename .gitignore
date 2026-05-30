@@ -1,0 +1,39 @@
+# ---------------------------------------------------
+# Godot generated files / caches
+# ---------------------------------------------------
+
+.godot/
+
+# Import cache files
+.import/
+
+# Mono / C# build outputs (future proofing)
+.mono/
+
+# OS noise
+Thumbs.db
+.DS_Store
+
+# VS Code local settings (optional)
+.vscode/settings.json
+
+# Temporary files
+*.tmp
+*.log
+
+# Ignore Godot editor state churn
+*folding*.cfg
+*editstate*.cfg
+uid_cache.bin
+filesystem_update*
+
+# ---------------------------------------------------
+# Keep project files tracked
+# ---------------------------------------------------
+
+!project.godot
+!*.gd
+!*.tscn
+!*.png
+!*.svg
+!*.uid
