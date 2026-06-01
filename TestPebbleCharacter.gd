@@ -31,20 +31,33 @@ class_name TestPebbleCharacter
 @export var power_sweep_speed: float = 1.45
 
 @export_group("Motion")
-@export var gravity: float = 980.0
+@export var gravity: float = 520.0
 @export var air_drag: float = 0.995
 @export var horizontal_drag_on_skip: float = 0.97
 
 @export_group("Water Impact")
 @export var impact_min_speed: float = 80.0
 @export var impact_cooldown: float = 0.22
-@export var skip_bounce_factor: float = 0.18
+@export var skip_bounce_factor: float = 0.26
 @export var max_bounce_velocity: float = 260.0
 @export var water_impulse_multiplier: float = 1.0
+
+# Temporary instrumentation toggle.
+# Used to understand why skip counts normalize.
+@export var debug_skip_metrics: bool = true
 
 @export_group("Skip / Sink Rules")
 @export var min_horizontal_speed_to_skip: float = 95.0
 @export var max_vertical_speed_to_skip: float = 900.0
+
+# Progressive skip model.
+# These values control energy decay after each water contact.
+@export var base_skip_energy_loss: float = 0.07
+@export var steep_impact_energy_loss: float = 0.13
+@export var weak_lift_energy_loss: float = 0.10
+@export var sink_energy_threshold: float = 0.08
+@export var micro_skip_energy_threshold: float = 0.10
+
 @export var sink_gravity_multiplier: float = 0.55
 @export var sink_drag: float = 0.94
 
@@ -64,9 +77,16 @@ var angle_direction: float = 1.0
 
 var power_phase: float = 0.0
 var selected_power: float = 0.0
+var selected_power_ratio: float = 0.0
 
 var cooldown_timer: float = 0.0
 var was_above_surface: bool = true
+
+# Runtime skip state.
+# Calculated at launch and reduced after each water impact.
+var launch_quality: float = 0.0
+var skip_energy: float = 0.0
+var skip_count: int = 0
 
 
 func _ready() -> void:
@@ -173,15 +193,28 @@ func _update_sinking_motion(delta: float) -> void:
 
 
 func _launch_pebble() -> void:
-	var power_ratio: float = _get_power_ratio()
-	selected_power = lerp(min_launch_power, max_launch_power, power_ratio)
+	selected_power_ratio = _get_power_ratio()
+	selected_power = lerp(min_launch_power, max_launch_power, selected_power_ratio)
 
 	var angle_radians: float = deg_to_rad(locked_angle)
 
+	# Pebble skipping launch bias:
+	# A skipping stone needs strong forward speed and controlled vertical lift.
+	var horizontal_launch_speed: float = cos(angle_radians) * selected_power * 1.35
+	var vertical_launch_speed: float = sin(angle_radians) * selected_power * 0.25
+
 	velocity = Vector2(
-		cos(angle_radians) * selected_power,
-		-sin(angle_radians) * selected_power
-	)
+		horizontal_launch_speed,
+		-vertical_launch_speed
+)
+
+	# Strong throws near the sweet spot carry more skip potential.
+	var angle_error: float = abs(locked_angle - 22.0)
+	var angle_quality: float = clamp(1.0 - (angle_error / 28.0), 0.0, 1.0)
+
+	launch_quality = selected_power_ratio * angle_quality
+	skip_energy = clamp(launch_quality, 0.05, 1.0)
+	skip_count = 0
 
 	launch_state = LaunchState.LAUNCHED
 	was_above_surface = true
@@ -198,40 +231,88 @@ func _handle_water_impact() -> void:
 
 	water.disturb_world(global_position.x, downward_speed * water_impulse_multiplier, 5)
 
-	if not _can_skip(horizontal_speed, downward_speed):
+	var impact_angle: float = rad_to_deg(abs(atan2(downward_speed, horizontal_speed)))
+	var lift_quality: float = _get_angle_quality(impact_angle)
+
+	if debug_skip_metrics:
+		print(
+			"SKIP_METRICS | ",
+			"skip=", skip_count,
+			" | power=", snapped(selected_power, 0.01),
+			" | angle=", snapped(locked_angle, 0.01),
+			" | vx=", snapped(horizontal_speed, 0.01),
+			" | vy=", snapped(downward_speed, 0.01),
+			" | impact_angle=", snapped(impact_angle, 0.01),
+			" | lift_quality=", snapped(lift_quality, 0.01),
+			" | energy=", snapped(skip_energy, 0.01)
+		)
+
+	if not _can_skip(horizontal_speed, downward_speed, impact_angle, lift_quality):
 		_start_sinking()
 		return
 
+	skip_count += 1
+
+	# Energy decays faster when impact angle is poor or lift is weak.
+	var steepness: float = clamp(impact_angle / 48.0, 0.0, 1.0)
+	var energy_loss: float = base_skip_energy_loss
+	energy_loss += steepness * steep_impact_energy_loss
+	energy_loss += (1.0 - lift_quality) * weak_lift_energy_loss
+
+	skip_energy = max(0.0, skip_energy - energy_loss)
+
+	# Early skips carry more height. Late skips become smaller taps.
+	var energy_factor: float = clamp(skip_energy, 0.0, 1.0)
+	var bounce_energy_scale: float = lerp(0.60, 1.0, energy_factor)
+
 	var bounce_speed: float = min(
-		downward_speed * skip_bounce_factor,
-		max_bounce_velocity
+	downward_speed * skip_bounce_factor * bounce_energy_scale,
+	max_bounce_velocity
+
 	)
 
+	# Forward speed decays more on steep/poor impacts.
+	var forward_decay: float = horizontal_drag_on_skip - (steepness * 0.12)
+	forward_decay = clamp(forward_decay, 0.72, horizontal_drag_on_skip)
+
+	# Micro-skip stage: low height, more skim, then sink naturally.
+	if skip_energy <= micro_skip_energy_threshold:
+		bounce_speed = max(18.0, bounce_speed * 0.45)
+		forward_decay = max(forward_decay, 0.90)
+
 	velocity.y = -bounce_speed
-	velocity.x *= horizontal_drag_on_skip
+	velocity.x *= forward_decay
+
+	if debug_skip_metrics:
+		print(
+			"SKIP_RESPONSE | ",
+			"bounce=", snapped(bounce_speed, 0.01),
+			" | new_vx=", snapped(abs(velocity.x), 0.01),
+			" | new_vy=", snapped(velocity.y, 0.01),
+			" | forward_decay=", snapped(forward_decay, 0.01),
+			" | energy_after=", snapped(skip_energy, 0.01)
+		)
 
 	global_position.y = water.get_surface_y_world(global_position.x) - 4.0
 
 	cooldown_timer = impact_cooldown
 	was_above_surface = true
 
-
-func _can_skip(horizontal_speed: float, downward_speed: float) -> bool:
-	# Skip requires enough forward energy.
+func _can_skip(horizontal_speed: float, downward_speed: float, _impact_angle: float, _lift_quality: float) -> bool:
+	# Forward speed is still the minimum requirement.
 	if horizontal_speed < min_horizontal_speed_to_skip:
 		return false
 
-	# Very steep/heavy impacts should sink rather than bounce forever.
+	# A very hard downward hit should sink.
 	if downward_speed > max_vertical_speed_to_skip:
 		return false
 
 	return true
 
-
 func _start_sinking() -> void:
 	launch_state = LaunchState.SINKING
 
-	# Stop artificial bounce. Keep some forward drift as it dies.
+	# Enter sink state with reduced vertical impact and fading forward drift.
 	velocity.y = abs(velocity.y) * 0.25
 	velocity.x *= 0.45
 
@@ -277,6 +358,13 @@ func _draw_angle_selector() -> void:
 	draw_line(Vector2.ZERO, end_point, Color(1.0, 1.0, 1.0, 0.95), 3.0, true)
 	draw_circle(end_point, 4.0, Color(1.0, 1.0, 1.0, 0.95))
 
+func _get_angle_quality(angle_degrees: float) -> float:
+	# Pebbles skip best at shallow launch / impact angles.
+	# 22 degrees is our current game sweet spot.
+	var sweet_spot: float = 22.0
+	var angle_error: float = abs(angle_degrees - sweet_spot)
+
+	return clamp(1.0 - (angle_error / 28.0), 0.0, 1.0)
 
 func _draw_power_selector() -> void:
 	var bar_height: float = 120.0
