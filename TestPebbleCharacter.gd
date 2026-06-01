@@ -58,6 +58,12 @@ class_name TestPebbleCharacter
 @export var sink_energy_threshold: float = 0.03
 @export var micro_skip_energy_threshold: float = 0.10
 
+# Late-stage skim behaviour.
+# Used when the pebble is nearly out of energy but still has forward speed.
+@export var skim_energy_threshold: float = 0.30
+@export var skim_rebound_speed: float = 16.0
+@export var skim_forward_decay: float = 0.995
+
 @export var sink_gravity_multiplier: float = 0.55
 @export var sink_drag: float = 0.94
 
@@ -275,10 +281,11 @@ func _handle_water_impact() -> void:
 	var forward_decay: float = horizontal_drag_on_skip - (steepness * 0.12)
 	forward_decay = clamp(forward_decay, 0.72, horizontal_drag_on_skip)
 
-	# Micro-skip stage: low height, more skim, then sink naturally.
-	if skip_energy <= micro_skip_energy_threshold:
-		bounce_speed = max(18.0, bounce_speed * 0.45)
-		forward_decay = max(forward_decay, 0.90)
+	# Skim stage: when energy is low, preserve forward motion
+	# and use a tiny rebound so the pebble skitters before sinking.
+	if skip_energy <= skim_energy_threshold:
+		bounce_speed = skim_rebound_speed
+		forward_decay = skim_forward_decay
 
 	velocity.y = -bounce_speed
 	velocity.x *= forward_decay
