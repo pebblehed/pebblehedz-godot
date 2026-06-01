@@ -94,6 +94,11 @@ var launch_quality: float = 0.0
 var skip_energy: float = 0.0
 var skip_count: int = 0
 
+# Runtime skim state.
+# Used for the final low-energy glide/skitter before sinking.
+var is_skimming: bool = false
+var skim_timer: float = 0.0
+
 
 func _ready() -> void:
 	water = get_node_or_null(water_path)
@@ -108,10 +113,16 @@ func _physics_process(delta: float) -> void:
 
 	if launch_state == LaunchState.ANGLE_SELECT:
 		_update_angle_select(delta)
+
 	elif launch_state == LaunchState.POWER_SELECT:
 		_update_power_select(delta)
+
 	elif launch_state == LaunchState.LAUNCHED:
-		_update_launched_motion(delta)
+		if is_skimming:
+			_update_skim_motion(delta)
+		else:
+			_update_launched_motion(delta)
+
 	elif launch_state == LaunchState.SINKING:
 		_update_sinking_motion(delta)
 
@@ -186,6 +197,23 @@ func _update_launched_motion(delta: float) -> void:
 	if global_position.y > reset_below_y:
 		reset_pebble()
 
+func _update_skim_motion(delta: float) -> void:
+	# Skim mode keeps the pebble close to the water surface briefly.
+	# This creates a visible low-height glide/skitter before final sink.
+	skim_timer -= delta
+
+	var surface_y: float = water.get_surface_y_world(global_position.x)
+
+	velocity.x *= skim_forward_decay
+	velocity.y = 0.0
+
+	global_position.y = surface_y - 2.0
+	move_and_slide()
+
+	if skim_timer <= 0.0 or abs(velocity.x) < min_horizontal_speed_to_skip:
+		is_skimming = false
+		_start_sinking()		
+
 
 func _update_sinking_motion(delta: float) -> void:
 	# Once sinking, the pebble loses forward energy and drops away.
@@ -221,10 +249,14 @@ func _launch_pebble() -> void:
 	launch_quality = selected_power_ratio * angle_quality
 	skip_energy = clamp(launch_quality, 0.05, 1.0)
 	skip_count = 0
+	is_skimming = false
+	skim_timer = 0.0
 
 	launch_state = LaunchState.LAUNCHED
-	was_above_surface = true
 	cooldown_timer = 0.0
+	was_above_surface = true
+	is_skimming = false
+	skim_timer = 0.0
 
 
 func _get_power_ratio() -> float:
@@ -284,8 +316,9 @@ func _handle_water_impact() -> void:
 	# Skim stage: when energy is low, preserve forward motion
 	# and use a tiny rebound so the pebble skitters before sinking.
 	if skip_energy <= skim_energy_threshold:
-		bounce_speed = skim_rebound_speed
-		forward_decay = skim_forward_decay
+		is_skimming = true
+		skim_timer = 0.35
+		return
 
 	velocity.y = -bounce_speed
 	velocity.x *= forward_decay
