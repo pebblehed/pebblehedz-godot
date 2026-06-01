@@ -52,10 +52,10 @@ class_name TestPebbleCharacter
 
 # Progressive skip model.
 # These values control energy decay after each water contact.
-@export var base_skip_energy_loss: float = 0.07
+@export var base_skip_energy_loss: float = 0.045
 @export var steep_impact_energy_loss: float = 0.13
 @export var weak_lift_energy_loss: float = 0.10
-@export var sink_energy_threshold: float = 0.08
+@export var sink_energy_threshold: float = 0.03
 @export var micro_skip_energy_threshold: float = 0.10
 
 @export var sink_gravity_multiplier: float = 0.55
