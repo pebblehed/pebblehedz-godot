@@ -208,7 +208,7 @@ func _update_skim_motion(delta: float) -> void:
 	velocity.y = 0.0
 
 	# Small oscillation so skim visually reads as repeated surface taps.
-	var skim_wave: float = sin((0.55 - skim_timer) * 40.0) * 2.5
+	var skim_wave: float = sin((0.55 - skim_timer) * 65.0) * 4.0
 
 	global_position.y = surface_y - 2.0 + skim_wave
 
