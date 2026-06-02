@@ -26,8 +26,8 @@ class_name TestPebbleCharacter
 @export var min_angle_degrees: float = -1.0
 @export var max_angle_degrees: float = 93.0
 @export var angle_sweep_speed: float = 95.0
-@export var min_launch_power: float = 280.0
-@export var max_launch_power: float = 920.0
+@export var min_launch_power: float = 520.0
+@export var max_launch_power: float = 1350.0
 @export var power_sweep_speed: float = 1.45
 
 @export_group("Motion")
@@ -289,7 +289,13 @@ func _launch_pebble() -> void:
 
 
 func _get_power_ratio() -> float:
-	return (sin(power_phase * TAU - PI / 2.0) + 1.0) * 0.5
+	# Smooth 0..1 power oscillation.
+	var raw_ratio: float = (sin(power_phase * TAU - PI / 2.0) + 1.0) * 0.5
+
+	# Skill curve:
+	# early power rises slowly, then accelerates near full power.
+	# This makes high-power timing harder and more satisfying.
+	return pow(raw_ratio, 2.2)
 
 
 func _handle_water_impact() -> void:
