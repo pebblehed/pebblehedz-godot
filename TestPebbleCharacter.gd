@@ -39,6 +39,8 @@ class_name TestPebbleCharacter
 @export var impact_min_speed: float = 80.0
 @export var impact_cooldown: float = 0.22
 @export var skip_bounce_factor: float = 0.26
+@export var water_forward_lift_boost: float = 85.0
+@export var first_skip_lift_multiplier: float = 1.55
 @export var max_bounce_velocity: float = 260.0
 @export var water_impulse_multiplier: float = 1.0
 
@@ -60,7 +62,7 @@ class_name TestPebbleCharacter
 
 # Late-stage skim behaviour.
 # Used when the pebble is nearly out of energy but still has forward speed.
-@export var skim_energy_threshold: float = 0.30
+@export var skim_energy_threshold: float = 0.26
 @export var skim_rebound_speed: float = 16.0
 @export var skim_forward_decay: float = 0.995
 
@@ -215,10 +217,16 @@ func _update_skim_motion(delta: float) -> void:
 	# Small repeated disturbances create visible wake pulses.
 	if randi() % 4 == 0:
 		water.disturb_world(
-			global_position.x,
-			3.5,
-			1
+			global_position.x - 20.0,
+			180.0,
+			2
 		)
+
+		water.disturb_world(
+			global_position.x,
+			260.0,
+			2
+	)
 
 	move_and_slide()
 
@@ -320,6 +328,13 @@ func _handle_water_impact() -> void:
 
 	skip_energy = max(0.0, skip_energy - energy_loss)
 
+	# Enter skim mode when energy is low but the pebble still has forward speed.
+	# This creates the final surface slide/skitter before sinking.
+	if skip_energy <= skim_energy_threshold and horizontal_speed >= min_horizontal_speed_to_skip:
+		is_skimming = true
+		skim_timer = 0.85
+		return
+
 	# Early skips carry more height. Late skips become smaller taps.
 	var energy_factor: float = clamp(skip_energy, 0.0, 1.0)
 	var bounce_energy_scale: float = lerp(0.60, 1.0, energy_factor)
@@ -334,15 +349,20 @@ func _handle_water_impact() -> void:
 	var forward_decay: float = horizontal_drag_on_skip - (steepness * 0.12)
 	forward_decay = clamp(forward_decay, 0.72, horizontal_drag_on_skip)
 
-	# Skim stage: when energy is low, preserve forward motion
-	# and use a tiny rebound so the pebble skitters before sinking.
-	if skip_energy <= skim_energy_threshold:
-		is_skimming = true
-		skim_timer = 0.55
-		return
+	# First good contact gets extra lift, then later skips decay normally.
+	# This helps create: big first skip -> smaller skips -> skim.
+	var final_bounce_speed: float = bounce_speed
 
-	velocity.y = -bounce_speed
+	if skip_count == 1 and impact_angle <= 40.0 and lift_quality >= 0.35:
+		final_bounce_speed *= first_skip_lift_multiplier
+
+	velocity.y = -final_bounce_speed
 	velocity.x *= forward_decay
+
+	# Good shallow contacts convert some water lift into forward drive.
+	# Keep this modest so repeated skips do not accelerate unnaturally.
+	if impact_angle <= 40.0 and lift_quality >= 0.35:
+		velocity.x += water_forward_lift_boost
 
 	if debug_skip_metrics:
 		print(
