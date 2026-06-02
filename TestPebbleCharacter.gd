@@ -207,8 +207,29 @@ func _update_skim_motion(delta: float) -> void:
 	velocity.x *= skim_forward_decay
 	velocity.y = 0.0
 
-	global_position.y = surface_y - 2.0
+	# Small oscillation so skim visually reads as repeated surface taps.
+	var skim_wave: float = sin((0.55 - skim_timer) * 40.0) * 2.5
+
+	global_position.y = surface_y - 2.0 + skim_wave
+
+	# Small repeated disturbances create visible wake pulses.
+	if randi() % 4 == 0:
+		water.disturb_world(
+			global_position.x,
+			3.5,
+			1
+		)
+
 	move_and_slide()
+
+	if debug_skip_metrics:
+		print(
+			"SKIM_METRICS | ",
+			"timer=", snapped(skim_timer, 0.01),
+			" | x=", snapped(global_position.x, 0.01),
+			" | vx=", snapped(abs(velocity.x), 0.01),
+			" | surface_y=", snapped(surface_y, 0.01)
+		)
 
 	if skim_timer <= 0.0 or abs(velocity.x) < min_horizontal_speed_to_skip:
 		is_skimming = false
