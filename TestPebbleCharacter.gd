@@ -317,7 +317,7 @@ func _handle_water_impact() -> void:
 	# and use a tiny rebound so the pebble skitters before sinking.
 	if skip_energy <= skim_energy_threshold:
 		is_skimming = true
-		skim_timer = 0.35
+		skim_timer = 0.55
 		return
 
 	velocity.y = -bounce_speed
