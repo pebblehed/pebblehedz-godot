@@ -2,26 +2,24 @@ extends Node2D
 
 # LilyPadManager
 # Visual-only environmental lily pads.
-# Phase 1 rules:
-# - No collisions.
-# - No boosts.
-# - No water physics changes.
-# - Random but fair placement ahead of the player.
+# No collisions, boosts, scoring, or water physics coupling.
 
 @export var pad_count: int = 18
 @export var spawn_start_x: float = 700.0
 @export var spawn_spacing_min: float = 450.0
 @export var spawn_spacing_max: float = 900.0
 @export var water_y: float = 430.0
-@export var y_jitter: float = 18.0
-@export var min_radius: float = 18.0
-@export var max_radius: float = 34.0
+@export var y_jitter: float = 14.0
+@export var min_radius: float = 20.0
+@export var max_radius: float = 36.0
 
 var lily_pads: Array[Dictionary] = []
+
 
 func _ready() -> void:
 	_generate_lily_pads()
 	queue_redraw()
+
 
 func _generate_lily_pads() -> void:
 	lily_pads.clear()
@@ -35,63 +33,106 @@ func _generate_lily_pads() -> void:
 			"x": x,
 			"y": water_y + randf_range(-y_jitter, y_jitter),
 			"radius": randf_range(min_radius, max_radius),
-			"rotation": 0.0
+			"variant": randi_range(0, 2)
 		})
+
 
 func _draw() -> void:
 	for pad in lily_pads:
 		var pos := Vector2(pad["x"], pad["y"])
 		var radius: float = pad["radius"]
-		var pad_rotation: float = pad["rotation"]
+		var variant: int = pad["variant"]
 
-		# Convert the circular pad into a flatter organic ellipse.
-		var ellipse_scale := Vector2(1.45, 0.72)
+		_draw_lily_pad(pos, radius, variant)
 
-		draw_set_transform(pos, pad_rotation, ellipse_scale)
 
-		# Main lily pad body.
-		draw_circle(Vector2.ZERO, radius, Color(0.16, 0.40, 0.22, 0.88))
+func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
+	# Pads sit flat on the water. No random tilt.
+	var ellipse_scale := Vector2(1.35, 0.72)
 
-		# Softer inner highlight to stop the pad feeling flat.
-		draw_circle(Vector2(radius * 0.12, -radius * 0.10), radius * 0.58, Color(0.26, 0.55, 0.30, 0.32))
+	draw_set_transform(pos, 0.0, ellipse_scale)
 
-		# Lily pad wedge cut.
-		var notch_points := PackedVector2Array([
-			Vector2(radius * 0.10, 0.0),
-			Vector2(radius * 1.00, -radius * 0.34),
-			Vector2(radius * 1.00, radius * 0.34)
-		])
+	# Soft water-contact shadow.
+	draw_circle(
+		Vector2(0.0, radius * 0.18),
+		radius * 1.05,
+		Color(0.02, 0.07, 0.08, 0.22)
+	)
 
-		draw_colored_polygon(
-			notch_points,
-			Color(0.04, 0.12, 0.06, 0.95)
+	# Main pad body.
+	draw_circle(
+		Vector2.ZERO,
+		radius,
+		Color(0.13, 0.36, 0.19, 0.92)
+	)
+
+	# Organic inner body highlight.
+	draw_circle(
+		Vector2(-radius * 0.08, -radius * 0.08),
+		radius * 0.72,
+		Color(0.24, 0.52, 0.28, 0.34)
+	)
+
+	# Clear wedge cut. This is the key lily pad read.
+	var notch_points := PackedVector2Array([
+		Vector2(radius * 0.05, 0.0),
+		Vector2(radius * 1.10, -radius * 0.38),
+		Vector2(radius * 1.10, radius * 0.38)
+	])
+
+	draw_colored_polygon(
+		notch_points,
+		Color(0.02, 0.09, 0.05, 0.96)
+	)
+
+	# Outer rim gives the pad a hand-drawn leaf edge.
+	draw_arc(
+		Vector2.ZERO,
+		radius,
+		0.52,
+		5.76,
+		42,
+		Color(0.07, 0.23, 0.11, 0.78),
+		2.2
+	)
+
+	# Central vein.
+	draw_line(
+		Vector2(-radius * 0.52, 0.0),
+		Vector2(radius * 0.42, 0.0),
+		Color(0.48, 0.74, 0.42, 0.58),
+		2.0
+	)
+
+	# Side veins.
+	draw_line(
+		Vector2(-radius * 0.10, 0.0),
+		Vector2(radius * 0.33, -radius * 0.32),
+		Color(0.48, 0.74, 0.42, 0.38),
+		1.4
+	)
+
+	draw_line(
+		Vector2(-radius * 0.10, 0.0),
+		Vector2(radius * 0.33, radius * 0.32),
+		Color(0.48, 0.74, 0.42, 0.38),
+		1.4
+	)
+
+	# Tiny natural variation so they do not all look cloned.
+	if variant == 1:
+		draw_circle(
+			Vector2(-radius * 0.28, radius * 0.16),
+			radius * 0.10,
+			Color(0.30, 0.58, 0.30, 0.42)
 		)
-
-		# Simple central vein.
+	elif variant == 2:
 		draw_line(
-			Vector2(-radius * 0.45, 0.0),
-			Vector2(radius * 0.55, 0.0),
-			Color(0.46, 0.72, 0.42, 0.55),
-			2.0
+			Vector2(-radius * 0.18, 0.0),
+			Vector2(radius * 0.18, -radius * 0.22),
+			Color(0.54, 0.78, 0.45, 0.28),
+			1.2
 		)
 
-		# Small side veins.
-		draw_line(
-			Vector2(0.0, 0.0),
-			Vector2(radius * 0.35, -radius * 0.32),
-			Color(0.46, 0.72, 0.42, 0.35),
-			1.5
-		)
-
-		draw_line(
-			Vector2(0.0, 0.0),
-			Vector2(radius * 0.35, radius * 0.32),
-			Color(0.46, 0.72, 0.42, 0.35),
-			1.5
-		)
-
-		# Reset drawing transform after each pad.
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-		if true:
-			print("test")
+	# Reset drawing transform.
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
