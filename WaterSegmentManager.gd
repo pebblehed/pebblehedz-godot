@@ -29,6 +29,7 @@ var target: Node2D
 var water_width: float = 0.0
 var water_left_x: float = 0
 var water_y: float = 430.0
+var skip_roll_update_once: bool = false
 
 
 func _ready() -> void:
@@ -49,6 +50,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if water == null or target == null:
+		return
+
+	if skip_roll_update_once:
+		skip_roll_update_once = false
 		return
 
 	_update_rolling_position()
@@ -100,4 +105,5 @@ func reset_water() -> void:
 
 	water_left_x = initial_left_x
 	_position_water()
+	skip_roll_update_once = true
 	water.reset_water()
