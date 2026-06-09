@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://bprqloc6v2v1l" path="res://PebbleCamera2D.gd" id="5_lquwl"]
 [ext_resource type="Script" uid="uid://bl5ednj3kkm3l" path="res://WaterSegmentManager.gd" id="6_7mycd"]
 [ext_resource type="Script" uid="uid://cyf8h8i2muxiu" path="res://DistanceMarkerManager.gd" id="7_272bh"]
+[ext_resource type="Script" uid="uid://bc6lfvod1sbl4" path="res://scripts/LilyPadManager.gd" id="8_5vw27"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
 radius = 12.0
@@ -42,3 +43,6 @@ initial_left_x = -1200.0
 [node name="DistanceMarkerManager" type="Node2D" parent="." unique_id=1796149517]
 script = ExtResource("7_272bh")
 target_path = NodePath("../TestPebbleCharacter2D")
+
+[node name="LilyPadManager" type="Node2D" parent="." unique_id=1524142162]
+script = ExtResource("8_5vw27")
