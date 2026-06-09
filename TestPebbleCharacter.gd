@@ -432,6 +432,9 @@ func reset_pebble() -> void:
 	cooldown_timer = 0.0
 	was_above_surface = true
 
+	if water != null:
+		water.reset_water()
+
 	queue_redraw()
 
 

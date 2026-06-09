@@ -107,3 +107,10 @@ func reset_water() -> void:
 	_position_water()
 	skip_roll_update_once = true
 	water.reset_water()
+
+	print(
+		"WATER_RESET | left_x=", water_left_x,
+		" | right_x=", water_left_x + water_width,
+		" | water_global_x=", water.global_position.x,
+		" | target_x=", target.global_position.x
+	)
