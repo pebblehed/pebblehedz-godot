@@ -1,15 +1,17 @@
 extends Node2D
 
 # LilyPadManager
-# Visual-only lily pads plus detection-only interaction logging.
+# Environmental lily pads for Pebble Hedz.
 #
-# Phase 2 rules:
-# - Detect when the pebble overlaps a lily pad.
-# - Print debug confirmation.
-# - No boost.
-# - No bounce.
-# - No energy changes.
-# - No water physics changes.
+# Current phase:
+# - Visual lily pads.
+# - Contact quality detection.
+# - Outcome logging only.
+#
+# Design rule:
+# The player does not steer into lily pads.
+# Lily pad outcomes are driven by physics, chance, speed, approach angle,
+# and contact quality after launch.
 
 @export var target_path: NodePath
 
@@ -26,19 +28,34 @@ extends Node2D
 var target: Node2D
 var lily_pads: Array[Dictionary] = []
 
+var previous_target_position: Vector2 = Vector2.ZERO
+var estimated_velocity: Vector2 = Vector2.ZERO
+
 
 func _ready() -> void:
 	target = get_node_or_null(target_path) as Node2D
+
+	if target != null:
+		previous_target_position = target.global_position
 
 	_generate_lily_pads()
 	queue_redraw()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if target == null:
 		return
 
+	_update_estimated_velocity(delta)
 	_check_lily_pad_detection()
+
+
+func _update_estimated_velocity(delta: float) -> void:
+	if delta <= 0.0:
+		return
+
+	estimated_velocity = (target.global_position - previous_target_position) / delta
+	previous_target_position = target.global_position
 
 
 func _generate_lily_pads() -> void:
@@ -66,15 +83,12 @@ func _check_lily_pad_detection() -> void:
 		var pad_pos := Vector2(pad["x"], pad["y"])
 		var radius: float = pad["radius"]
 
-		# Match detection to the visual lily pad ellipse.
-		# X is wider than Y because the pad is drawn as a flat ellipse.
+		# Match detection to the drawn flat lily pad ellipse.
 		var ellipse_x_radius := radius * 1.35 + detection_padding
 		var ellipse_y_radius := radius * 0.72 + detection_padding
 
 		var offset := target.global_position - pad_pos
 
-		# Normalised ellipse distance:
-		# <= 1.0 means the pebble is inside the lily pad's contact area.
 		var ellipse_distance := sqrt(
 			pow(offset.x / ellipse_x_radius, 2.0) +
 			pow(offset.y / ellipse_y_radius, 2.0)
@@ -83,24 +97,68 @@ func _check_lily_pad_detection() -> void:
 		if ellipse_distance <= 1.0:
 			pad["detected"] = true
 
-			var contact_ratio := ellipse_distance
-			var contact_quality := "NEAR_MISS"
-			if contact_ratio <= 0.35:
-				contact_quality = "DIRECT"
-			elif contact_ratio <= 0.60:
-				contact_quality = "GOOD"
-			elif contact_ratio <= 0.85:
-				contact_quality = "GLANCING"
+			var contact_quality := _get_contact_quality(ellipse_distance)
+			var outcome := _estimate_lily_pad_outcome(contact_quality)
 
 			print(
-				"LILY_PAD_CONTACT | quality=", contact_quality,
-				" | ratio=", contact_ratio,
-				" | pad_x=", pad_pos.x,
-				" | pad_y=", pad_pos.y,
-				" | pebble_x=", target.global_position.x,
-				" | pebble_y=", target.global_position.y,
+				"LILY_PAD_OUTCOME",
+				" | contact=", contact_quality,
+				" | outcome=", outcome,
+				" | speed=", estimated_velocity.length(),
+				" | approach_angle=", _get_approach_angle_degrees(),
 				" | ellipse_ratio=", ellipse_distance,
+				" | pad_x=", pad_pos.x,
+				" | pebble_x=", target.global_position.x
 			)
+
+
+func _get_contact_quality(ellipse_ratio: float) -> String:
+	if ellipse_ratio <= 0.35:
+		return "DIRECT"
+
+	if ellipse_ratio <= 0.60:
+		return "GOOD"
+
+	if ellipse_ratio <= 0.85:
+		return "GLANCING"
+
+	return "NEAR_MISS"
+
+
+func _get_approach_angle_degrees() -> float:
+	if estimated_velocity.length() <= 0.0:
+		return 90.0
+
+	return rad_to_deg(
+		atan2(abs(estimated_velocity.y), abs(estimated_velocity.x))
+	)
+
+
+func _estimate_lily_pad_outcome(contact_quality: String) -> String:
+	var speed := estimated_velocity.length()
+	var approach_angle := _get_approach_angle_degrees()
+
+	# Shallow contact is better for survival.
+	# Steep contact should not give a strong save.
+	var shallow_contact := approach_angle <= 18.0
+	var moderate_contact := approach_angle <= 32.0
+
+	if contact_quality == "DIRECT" and shallow_contact and speed > 700.0:
+		return "WOULD_STRONG_SURVIVAL_BOOST"
+
+	if contact_quality == "DIRECT" and moderate_contact:
+		return "WOULD_MEDIUM_SURVIVAL_BOOST"
+
+	if contact_quality == "GOOD" and moderate_contact and speed > 500.0:
+		return "WOULD_MEDIUM_SURVIVAL_BOOST"
+
+	if contact_quality == "GLANCING" and shallow_contact and speed > 600.0:
+		return "WOULD_SMALL_SKIM_ASSIST"
+
+	if contact_quality == "NEAR_MISS":
+		return "WOULD_NO_EFFECT"
+
+	return "WOULD_WEAK_OR_FAILED_SAVE"
 
 
 func _draw() -> void:
@@ -113,33 +171,28 @@ func _draw() -> void:
 
 
 func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
-	# Pads sit flat on the water. No random tilt.
 	var ellipse_scale := Vector2(1.35, 0.72)
 
 	draw_set_transform(pos, 0.0, ellipse_scale)
 
-	# Soft water-contact shadow.
 	draw_circle(
 		Vector2(0.0, radius * 0.18),
 		radius * 1.05,
 		Color(0.02, 0.07, 0.08, 0.22)
 	)
 
-	# Main pad body.
 	draw_circle(
 		Vector2.ZERO,
 		radius,
 		Color(0.13, 0.36, 0.19, 0.92)
 	)
 
-	# Organic inner body highlight.
 	draw_circle(
 		Vector2(-radius * 0.08, -radius * 0.08),
 		radius * 0.72,
 		Color(0.24, 0.52, 0.28, 0.34)
 	)
 
-	# Clear wedge cut. This is the key lily pad read.
 	var notch_points := PackedVector2Array([
 		Vector2(radius * 0.05, 0.0),
 		Vector2(radius * 1.10, -radius * 0.38),
@@ -151,7 +204,6 @@ func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
 		Color(0.02, 0.09, 0.05, 0.96)
 	)
 
-	# Outer rim gives the pad a hand-drawn leaf edge.
 	draw_arc(
 		Vector2.ZERO,
 		radius,
@@ -162,7 +214,6 @@ func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
 		2.2
 	)
 
-	# Central vein.
 	draw_line(
 		Vector2(-radius * 0.52, 0.0),
 		Vector2(radius * 0.42, 0.0),
@@ -170,7 +221,6 @@ func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
 		2.0
 	)
 
-	# Side veins.
 	draw_line(
 		Vector2(-radius * 0.10, 0.0),
 		Vector2(radius * 0.33, -radius * 0.32),
@@ -185,7 +235,6 @@ func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
 		1.4
 	)
 
-	# Tiny natural variation so they do not all look cloned.
 	if variant == 1:
 		draw_circle(
 			Vector2(-radius * 0.28, radius * 0.16),
@@ -200,5 +249,4 @@ func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
 			1.2
 		)
 
-	# Reset drawing transform.
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
