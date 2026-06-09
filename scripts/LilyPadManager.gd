@@ -14,6 +14,7 @@ extends Node2D
 # and contact quality after launch.
 
 @export var target_path: NodePath
+@export var water_manager_path: NodePath
 
 @export var pad_count: int = 18
 @export var spawn_start_x: float = 700.0
@@ -24,7 +25,11 @@ extends Node2D
 @export var min_radius: float = 20.0
 @export var max_radius: float = 36.0
 @export var detection_padding: float = 4.0
+@export var wave_slope_sample_distance: float = 12.0
+@export var max_wave_rotation_degrees: float = 18.0
+@export var wave_rotation_strength: float = 4.0
 
+var water_manager: Node
 var target: Node2D
 var lily_pads: Array[Dictionary] = []
 
@@ -34,6 +39,7 @@ var estimated_velocity: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	target = get_node_or_null(target_path) as Node2D
+	water_manager = get_node_or_null(water_manager_path)
 
 	if target != null:
 		previous_target_position = target.global_position
@@ -48,6 +54,9 @@ func _process(delta: float) -> void:
 
 	_update_estimated_velocity(delta)
 	_check_lily_pad_detection()
+
+	# Redraw every frame so lily pads visually follow the live water surface.
+	queue_redraw()
 
 
 func _update_estimated_velocity(delta: float) -> void:
@@ -163,17 +172,39 @@ func _estimate_lily_pad_outcome(contact_quality: String) -> String:
 
 func _draw() -> void:
 	for pad in lily_pads:
-		var pos := Vector2(pad["x"], pad["y"])
+		var pad_x: float = pad["x"]
+		var base_y: float = pad["y"]
+		var surface_y := base_y
+		var wave_rotation := 0.0
+
+		if water_manager != null and water_manager.has_method("get_surface_y_world"):
+			surface_y = water_manager.get_surface_y_world(pad_x)
+
+			var left_y: float = water_manager.get_surface_y_world(pad_x - wave_slope_sample_distance)
+			var right_y: float = water_manager.get_surface_y_world(pad_x + wave_slope_sample_distance)
+
+			var slope_angle := atan2(
+				right_y - left_y,
+				wave_slope_sample_distance * 2.0
+			)
+
+			wave_rotation = clamp(
+				slope_angle * wave_rotation_strength,
+				deg_to_rad(-max_wave_rotation_degrees),
+				deg_to_rad(max_wave_rotation_degrees)
+			)
+
+		var pos := Vector2(pad_x, surface_y)
 		var radius: float = pad["radius"]
 		var variant: int = pad["variant"]
 
-		_draw_lily_pad(pos, radius, variant)
+		_draw_lily_pad(pos, radius, variant, wave_rotation)
 
 
-func _draw_lily_pad(pos: Vector2, radius: float, variant: int) -> void:
+func _draw_lily_pad(pos: Vector2, radius: float, variant: int, wave_rotation: float) -> void:
 	var ellipse_scale := Vector2(1.35, 0.72)
 
-	draw_set_transform(pos, 0.0, ellipse_scale)
+	draw_set_transform(pos, wave_rotation, ellipse_scale)
 
 	draw_circle(
 		Vector2(0.0, radius * 0.18),
