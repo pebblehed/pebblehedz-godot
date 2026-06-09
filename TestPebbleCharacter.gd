@@ -93,6 +93,7 @@ var was_above_surface: bool = true
 # Runtime skip state.
 # Calculated at launch and reduced after each water impact.
 var launch_quality: float = 0.0
+var throw_quality: float = 0.0
 var skip_energy: float = 0.0
 var skip_count: int = 0
 
@@ -276,8 +277,14 @@ func _launch_pebble() -> void:
 	var angle_quality: float = clamp(1.0 - (angle_error / 28.0), 0.0, 1.0)
 
 	launch_quality = selected_power_ratio * angle_quality
+
+	# Throw quality separates weak, average, great, and perfect throws.
+	# It will let later impact logic respond differently without touching water/camera.
+	throw_quality = clamp(launch_quality, 0.0, 1.0)
+
 	skip_energy = clamp(launch_quality, 0.05, 1.0)
 	skip_count = 0
+
 	is_skimming = false
 	skim_timer = 0.0
 
@@ -317,7 +324,9 @@ func _handle_water_impact() -> void:
 			" | vy=", snapped(downward_speed, 0.01),
 			" | impact_angle=", snapped(impact_angle, 0.01),
 			" | lift_quality=", snapped(lift_quality, 0.01),
-			" | energy=", snapped(skip_energy, 0.01)
+			" | energy=", snapped(skip_energy, 0.01),
+			" | throw_quality=", snapped(throw_quality, 0.01)
+			
 		)
 
 	if not _can_skip(horizontal_speed, downward_speed, impact_angle, lift_quality):
