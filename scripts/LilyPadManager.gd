@@ -21,7 +21,7 @@ extends Node2D
 @export var y_jitter: float = 14.0
 @export var min_radius: float = 20.0
 @export var max_radius: float = 36.0
-@export var detection_padding: float = 18.0
+@export var detection_padding: float = 4.0
 
 var target: Node2D
 var lily_pads: Array[Dictionary] = []
@@ -64,18 +64,42 @@ func _check_lily_pad_detection() -> void:
 			continue
 
 		var pad_pos := Vector2(pad["x"], pad["y"])
-		var distance_to_pebble := target.global_position.distance_to(pad_pos)
-		var detection_radius: float = pad["radius"] + detection_padding
+		var radius: float = pad["radius"]
 
-		if distance_to_pebble <= detection_radius:
+		# Match detection to the visual lily pad ellipse.
+		# X is wider than Y because the pad is drawn as a flat ellipse.
+		var ellipse_x_radius := radius * 1.35 + detection_padding
+		var ellipse_y_radius := radius * 0.72 + detection_padding
+
+		var offset := target.global_position - pad_pos
+
+		# Normalised ellipse distance:
+		# <= 1.0 means the pebble is inside the lily pad's contact area.
+		var ellipse_distance := sqrt(
+			pow(offset.x / ellipse_x_radius, 2.0) +
+			pow(offset.y / ellipse_y_radius, 2.0)
+		)
+
+		if ellipse_distance <= 1.0:
 			pad["detected"] = true
 
+			var contact_ratio := ellipse_distance
+			var contact_quality := "NEAR_MISS"
+			if contact_ratio <= 0.35:
+				contact_quality = "DIRECT"
+			elif contact_ratio <= 0.60:
+				contact_quality = "GOOD"
+			elif contact_ratio <= 0.85:
+				contact_quality = "GLANCING"
+
 			print(
-				"LILY_PAD_DETECTED | pad_x=", pad_pos.x,
+				"LILY_PAD_CONTACT | quality=", contact_quality,
+				" | ratio=", contact_ratio,
+				" | pad_x=", pad_pos.x,
 				" | pad_y=", pad_pos.y,
 				" | pebble_x=", target.global_position.x,
 				" | pebble_y=", target.global_position.y,
-				" | distance=", distance_to_pebble
+				" | ellipse_ratio=", ellipse_distance,
 			)
 
 
