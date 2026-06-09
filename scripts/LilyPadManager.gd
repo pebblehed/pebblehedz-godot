@@ -1,8 +1,17 @@
 extends Node2D
 
 # LilyPadManager
-# Visual-only environmental lily pads.
-# No collisions, boosts, scoring, or water physics coupling.
+# Visual-only lily pads plus detection-only interaction logging.
+#
+# Phase 2 rules:
+# - Detect when the pebble overlaps a lily pad.
+# - Print debug confirmation.
+# - No boost.
+# - No bounce.
+# - No energy changes.
+# - No water physics changes.
+
+@export var target_path: NodePath
 
 @export var pad_count: int = 18
 @export var spawn_start_x: float = 700.0
@@ -12,13 +21,24 @@ extends Node2D
 @export var y_jitter: float = 14.0
 @export var min_radius: float = 20.0
 @export var max_radius: float = 36.0
+@export var detection_padding: float = 18.0
 
+var target: Node2D
 var lily_pads: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	target = get_node_or_null(target_path) as Node2D
+
 	_generate_lily_pads()
 	queue_redraw()
+
+
+func _process(_delta: float) -> void:
+	if target == null:
+		return
+
+	_check_lily_pad_detection()
 
 
 func _generate_lily_pads() -> void:
@@ -33,8 +53,30 @@ func _generate_lily_pads() -> void:
 			"x": x,
 			"y": water_y + randf_range(-y_jitter, y_jitter),
 			"radius": randf_range(min_radius, max_radius),
-			"variant": randi_range(0, 2)
+			"variant": randi_range(0, 2),
+			"detected": false
 		})
+
+
+func _check_lily_pad_detection() -> void:
+	for pad in lily_pads:
+		if pad["detected"]:
+			continue
+
+		var pad_pos := Vector2(pad["x"], pad["y"])
+		var distance_to_pebble := target.global_position.distance_to(pad_pos)
+		var detection_radius: float = pad["radius"] + detection_padding
+
+		if distance_to_pebble <= detection_radius:
+			pad["detected"] = true
+
+			print(
+				"LILY_PAD_DETECTED | pad_x=", pad_pos.x,
+				" | pad_y=", pad_pos.y,
+				" | pebble_x=", target.global_position.x,
+				" | pebble_y=", target.global_position.y,
+				" | distance=", distance_to_pebble
+			)
 
 
 func _draw() -> void:

@@ -46,3 +46,4 @@ target_path = NodePath("../TestPebbleCharacter2D")
 
 [node name="LilyPadManager" type="Node2D" parent="." unique_id=1524142162]
 script = ExtResource("8_5vw27")
+target_path = NodePath("../TestPebbleCharacter2D")
