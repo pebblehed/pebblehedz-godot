@@ -337,15 +337,28 @@ func _handle_water_impact() -> void:
 
 	# Energy decays faster when impact angle is poor or lift is weak.
 	var steepness: float = clamp(impact_angle / 48.0, 0.0, 1.0)
+
 	var energy_loss: float = base_skip_energy_loss
 	energy_loss += steepness * steep_impact_energy_loss
 	energy_loss += (1.0 - lift_quality) * weak_lift_energy_loss
+
+	# Stronger throws retain more usable energy.
+	# Poor throws fade sooner, great throws carry further.
+	var quality_retention: float = lerp(1.15, 0.70, throw_quality)
+	energy_loss *= quality_retention
 
 	skip_energy = max(0.0, skip_energy - energy_loss)
 
 	# Enter skim mode when energy is low but the pebble still has forward speed.
 	# This creates the final surface slide/skitter before sinking.
-	if skip_energy <= skim_energy_threshold and horizontal_speed >= min_horizontal_speed_to_skip:
+	# Better throws delay skim entry so they earn extra real skips first.
+	var quality_scaled_skim_threshold: float = lerp(
+		skim_energy_threshold,
+		skim_energy_threshold * 0.55,
+		throw_quality
+	)
+
+	if skip_energy <= quality_scaled_skim_threshold and horizontal_speed >= min_horizontal_speed_to_skip and throw_quality >= 0.45 and lift_quality >= 0.35:
 		is_skimming = true
 		skim_timer = 0.85
 		return
@@ -401,6 +414,10 @@ func _can_skip(horizontal_speed: float, downward_speed: float, _impact_angle: fl
 
 	# A very hard downward hit should sink.
 	if downward_speed > max_vertical_speed_to_skip:
+		return false
+
+	# Bad throws with no remaining skip energy should not keep bouncing.
+	if skip_energy <= sink_energy_threshold and throw_quality < 0.25:
 		return false
 
 	return true
