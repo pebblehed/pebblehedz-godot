@@ -108,11 +108,21 @@ func _check_lily_pad_detection() -> void:
 
 			var contact_quality := _get_contact_quality(ellipse_distance)
 			var outcome := _estimate_lily_pad_outcome(contact_quality)
+			var lift_amount := _get_lily_pad_lift(contact_quality)
+
+			# Temporarily disabled while we audit TestPebbleCharacter.gd.
+			# LilyPadManager should detect and evaluate contact, but the pebble owns movement changes.
+			#if lift_amount > 0.0 and target.has_method("apply_lily_pad_lift"):
+			#	target.apply_lily_pad_lift(lift_amount)
+
+			if lift_amount > 0.0 and target.has_method("apply_lily_pad_lift"):
+				target.apply_lily_pad_lift(lift_amount)
 
 			print(
 				"LILY_PAD_OUTCOME",
 				" | contact=", contact_quality,
 				" | outcome=", outcome,
+				" | lift=", lift_amount,
 				" | speed=", estimated_velocity.length(),
 				" | approach_angle=", _get_approach_angle_degrees(),
 				" | ellipse_ratio=", ellipse_distance,
@@ -168,6 +178,18 @@ func _estimate_lily_pad_outcome(contact_quality: String) -> String:
 		return "WOULD_NO_EFFECT"
 
 	return "WOULD_WEAK_OR_FAILED_SAVE"
+
+func _get_lily_pad_lift(contact_quality: String) -> float:
+	if contact_quality == "DIRECT":
+		return 55.0
+
+	if contact_quality == "GOOD":
+		return 35.0
+
+	if contact_quality == "GLANCING":
+		return 18.0
+
+	return 0.0
 
 
 func _draw() -> void:
