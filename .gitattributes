@@ -1,0 +1,16 @@
+# Pebble Hedz repository line-ending policy.
+# Keep project text files deterministic across Windows, macOS, and CI.
+
+*.gd text eol=lf
+*.tscn text eol=lf
+*.godot text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.ps1 text eol=lf
+*.gitignore text eol=lf
+*.gitattributes text eol=lf
+
+# Binary assets must never be line-ending normalized.
+*.png binary
+*.PNG binary
+*.docx binary
