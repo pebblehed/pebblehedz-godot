@@ -4,6 +4,7 @@
 	"editor.detectIndentation": false,
 	"editor.formatOnSave": false,
 	"[gdscript]": {
+		"editor.defaultFormatter": "DoHe.godot-format",
 		"editor.insertSpaces": false,
 		"editor.detectIndentation": false,
 		"editor.tabSize": 4,

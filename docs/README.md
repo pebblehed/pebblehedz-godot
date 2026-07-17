@@ -8,6 +8,7 @@ This directory contains the authoritative product and development context for Pe
 - `PEBBLEHEDZ_GAMEPLAY_DESIGN.md` — core loop, player agency, survival ecosystem, and gameplay behaviour.
 - `PEBBLEHEDZ_EXPERIENCE_DIRECTION.md` — premium, ASMR, visual, emotional, and mobile-first direction.
 - `PEBBLEHEDZ_DEVELOPMENT_STATE.md` — current implemented state, protected systems, experimental work, and exact next action.
+- `PEBBLEHEDZ_AI_IMPLEMENTATION_PROTOCOL.md` — governs AI-assisted implementation workflow, file scope, review, validation, and Claude Code execution discipline.
 
 ## Existing Contract Sources
 
