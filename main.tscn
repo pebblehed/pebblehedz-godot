@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://dogcuvxdyn6fg"]
 
-[ext_resource type="Script" uid="uid://s106wixwp166" path="res://Main.gd" id="1_0xm2m"]
-[ext_resource type="Script" uid="uid://b61pf3ta7nsn3" path="res://HookeWater2D.gd" id="2_h2yge"]
-[ext_resource type="Script" uid="uid://ctyajg0utm1du" path="res://TestPebbleCharacter.gd" id="3_h2yge"]
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1_0xm2m"]
+[ext_resource type="Script" path="res://scripts/HookeWater2D.gd" id="2_h2yge"]
+[ext_resource type="Script" path="res://scripts/TestPebbleCharacter.gd" id="3_h2yge"]
 [ext_resource type="Texture2D" uid="uid://q0n0gikp4spy" path="res://Pebble_2.PNG" id="4_1bvp3"]
-[ext_resource type="Script" uid="uid://bprqloc6v2v1l" path="res://PebbleCamera2D.gd" id="5_lquwl"]
-[ext_resource type="Script" uid="uid://bl5ednj3kkm3l" path="res://WaterSegmentManager.gd" id="6_7mycd"]
-[ext_resource type="Script" uid="uid://cyf8h8i2muxiu" path="res://DistanceMarkerManager.gd" id="7_272bh"]
+[ext_resource type="Script" path="res://scripts/PebbleCamera2D.gd" id="5_lquwl"]
+[ext_resource type="Script" path="res://scripts/WaterSegmentManager.gd" id="6_7mycd"]
+[ext_resource type="Script" path="res://scripts/DistanceMarkerManager.gd" id="7_272bh"]
 [ext_resource type="Script" uid="uid://bc6lfvod1sbl4" path="res://scripts/LilyPadManager.gd" id="8_5vw27"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
@@ -48,3 +48,5 @@ target_path = NodePath("../TestPebbleCharacter2D")
 script = ExtResource("8_5vw27")
 target_path = NodePath("../TestPebbleCharacter2D")
 water_manager_path = NodePath("../WaterSegmentManager")
+
+[node name="ButterflyManager" type="Node2D" parent="." unique_id=1063293947]
