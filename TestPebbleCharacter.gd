@@ -435,6 +435,40 @@ func _start_sinking() -> void:
 	was_above_surface = false
 
 
+func apply_lily_pad_repulsion(pad_index: int = -1) -> void:
+	# Lily pads assist active launched play, but do not revive sink state.
+	if launch_state != LaunchState.LAUNCHED:
+		return
+
+	var velocity_before: Vector2 = velocity
+	var energy_before: float = skip_energy
+
+	var lily_upward_repulsion_speed: float = 220.0
+	var lily_min_forward_speed: float = 185.0
+	var lily_energy_floor: float = 0.35
+
+	if is_skimming:
+		is_skimming = false
+		skim_timer = 0.0
+
+	var forward_sign: float = 1.0
+	if velocity_before.x < 0.0:
+		forward_sign = -1.0
+
+	velocity.y = -lily_upward_repulsion_speed
+	velocity.x = forward_sign * max(abs(velocity_before.x), lily_min_forward_speed)
+	skip_energy = max(skip_energy, lily_energy_floor)
+
+	print(
+		"LILY_PAD_REPULSION",
+		" | pad_index=", pad_index,
+		" | velocity_before=", velocity_before,
+		" | velocity_after=", velocity,
+		" | energy_before=", energy_before,
+		" | energy_after=", skip_energy
+	)
+
+
 func reset_pebble() -> void:
 	global_position = reset_position
 	velocity = Vector2.ZERO
