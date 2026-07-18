@@ -21,7 +21,7 @@ signal run_reset
 @export var water_path: NodePath
 
 @export_group("Spawn")
-@export var reset_position: Vector2 = Vector2(160.0, 120.0)
+@export var reset_position: Vector2 = Vector2(140.0, 280.0)
 @export var reset_below_y: float = 900.0
 
 @export_group("Launch")
@@ -443,8 +443,10 @@ func apply_lily_pad_repulsion(pad_index: int = -1) -> void:
 	var velocity_before: Vector2 = velocity
 	var energy_before: float = skip_energy
 
-	var lily_upward_repulsion_speed: float = 220.0
-	var lily_min_forward_speed: float = 185.0
+	var lily_min_upward_repulsion_speed: float = 300.0
+	var lily_max_upward_repulsion_speed: float = 440.0
+	var lily_speed_for_max_repulsion: float = 500.0
+	var lily_min_forward_speed: float = 260.0
 	var lily_energy_floor: float = 0.35
 
 	if is_skimming:
@@ -455,8 +457,52 @@ func apply_lily_pad_repulsion(pad_index: int = -1) -> void:
 	if velocity_before.x < 0.0:
 		forward_sign = -1.0
 
+	var incoming_forward_speed: float = abs(velocity_before.x)
+	var incoming_vertical_speed: float = abs(velocity_before.y)
+
+	var speed_ratio: float = clamp(
+	incoming_forward_speed / lily_speed_for_max_repulsion,
+	0.0,
+	1.0
+	)
+
+	var approach_ratio: float = clamp(
+	incoming_vertical_speed / max(incoming_forward_speed, 1.0),
+	0.0,
+	1.0
+	)
+
+	var base_upward_repulsion: float = lerp(
+	lily_min_upward_repulsion_speed,
+	lily_max_upward_repulsion_speed,
+	speed_ratio
+	)
+
+	var angle_upward_multiplier: float = lerp(
+	0.72,
+	1.18,
+	approach_ratio
+)
+
+	var forward_multiplier: float = lerp(
+	1.18,
+	1.02,
+	approach_ratio
+	)
+
+	var lily_upward_repulsion_speed: float = clamp(
+	base_upward_repulsion * angle_upward_multiplier,
+	lily_min_upward_repulsion_speed,
+	lily_max_upward_repulsion_speed
+	)
+
+	var lily_forward_speed: float = max(
+	incoming_forward_speed * forward_multiplier,
+	lily_min_forward_speed
+	)
+
 	velocity.y = -lily_upward_repulsion_speed
-	velocity.x = forward_sign * max(abs(velocity_before.x), lily_min_forward_speed)
+	velocity.x = forward_sign * lily_forward_speed
 	skip_energy = max(skip_energy, lily_energy_floor)
 
 	print(
@@ -466,7 +512,7 @@ func apply_lily_pad_repulsion(pad_index: int = -1) -> void:
 		" | velocity_after=", velocity,
 		" | energy_before=", energy_before,
 		" | energy_after=", skip_energy
-	)
+	)	
 
 
 func reset_pebble() -> void:
