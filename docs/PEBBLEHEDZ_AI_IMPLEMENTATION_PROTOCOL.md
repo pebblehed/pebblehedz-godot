@@ -106,6 +106,35 @@ Instant retry must remain protected.
 
 ---
 
+## GDScript Formatting and Indentation Integrity
+
+GDScript indentation is part of executable syntax and must be treated as an implementation integrity requirement, not as cosmetic formatting.
+
+For every `.gd` file:
+
+- indentation must use tabs only;
+- spaces must not be introduced for indentation;
+- existing tab-based indentation must be preserved exactly;
+- mixed tab and space indentation is prohibited;
+- implementation agents must preserve the existing scope and indentation hierarchy when editing code;
+- complete functions should be preferred over partial fragments when repairing indentation or scope damage;
+- automated or manual edits must not duplicate, truncate, or accidentally relocate existing code blocks;
+- formatting changes must not alter program behaviour.
+
+Before completing any task that modifies a `.gd` file, the implementing agent must:
+
+1. inspect the modified regions for correct scope and indentation;
+2. verify that no space-indented lines were introduced;
+3. check for accidentally duplicated or truncated code;
+4. run available parser, syntax, or project validation checks before gameplay validation;
+5. report any remaining warnings or errors rather than silently ignoring them.
+
+A `.gd` implementation is not considered ready for gameplay validation while known parser, indentation, scope, or structural errors remain.
+
+When Claude Code or another implementation agent requests permission to run read-only syntax, parser, test, or validation commands that are relevant to the authorised task, those commands should normally be allowed so the implementation can be validated before handoff.
+
+---
+
 ## Engineering Rules
 
 Before making any change:

@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name TestPebbleCharacter
 
+signal run_reset
+
 # TestPebbleCharacter.gd
 # Pebble Hedz launch + skip/sink baseline.
 #
@@ -451,6 +453,8 @@ func reset_pebble() -> void:
 
 	if water != null:
 		water.reset_water()
+
+	emit_signal("run_reset")
 
 	queue_redraw()
 
