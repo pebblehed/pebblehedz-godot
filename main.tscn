@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://dxbmwnq1anpg6" path="res://scripts/WaterSegmentManager.gd" id="6_7mycd"]
 [ext_resource type="Script" uid="uid://dcd2jiqcq3g65" path="res://scripts/DistanceMarkerManager.gd" id="7_272bh"]
 [ext_resource type="Script" uid="uid://bc6lfvod1sbl4" path="res://scripts/LilyPadManager.gd" id="8_5vw27"]
+[ext_resource type="Script" uid="uid://rk1xyth2nbai" path="res://scripts/JellyWaterEffect.gd" id="9_4c57u"]
 [ext_resource type="Script" uid="uid://dvrhmp835ct7w" path="res://scripts/BlueButterflyManager.gd" id="9_kek77"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
@@ -15,6 +16,7 @@ radius = 12.0
 
 [node name="Main" type="Node2D" unique_id=31250966]
 script = ExtResource("1_0xm2m")
+jelly_effect_path = NodePath("JellyWaterEffect")
 
 [node name="HookeWater2D" type="Node2D" parent="." unique_id=758368154]
 position = Vector2(575, 430)
@@ -49,6 +51,10 @@ target_path = NodePath("../TestPebbleCharacter2D")
 script = ExtResource("8_5vw27")
 target_path = NodePath("../TestPebbleCharacter2D")
 water_manager_path = NodePath("../WaterSegmentManager")
+
+[node name="JellyWaterEffect" type="Node2D" parent="." unique_id=828252226]
+script = ExtResource("9_4c57u")
+water_path = NodePath("../HookeWater2D")
 
 [node name="BlueButterflyManager" type="Node2D" parent="." unique_id=1063293947]
 script = ExtResource("9_kek77")

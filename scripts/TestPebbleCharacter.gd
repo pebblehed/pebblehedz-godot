@@ -51,7 +51,7 @@ signal run_reset
 @export var debug_skip_metrics: bool = true
 
 @export_group("Skip / Sink Rules")
-@export var min_horizontal_speed_to_skip: float = 95.0
+@export var min_horizontal_speed_to_skip: float = 260.0
 @export var max_vertical_speed_to_skip: float = 900.0
 
 # Progressive skip model.
@@ -71,6 +71,8 @@ signal run_reset
 @export var sink_gravity_multiplier: float = 0.55
 @export var sink_drag: float = 0.94
 
+@export var jelly_effect_path: NodePath
+
 enum LaunchState {
 	ANGLE_SELECT,
 	POWER_SELECT,
@@ -80,6 +82,7 @@ enum LaunchState {
 
 var launch_state: LaunchState = LaunchState.ANGLE_SELECT
 var water: Node
+var jelly_effect: Node
 
 var current_angle: float = 20.0
 var locked_angle: float = 20.0
@@ -107,7 +110,9 @@ var skim_timer: float = 0.0
 
 func _ready() -> void:
 	water = get_node_or_null(water_path)
+	jelly_effect = get_node_or_null(jelly_effect_path)
 	reset_pebble()
+
 
 
 func _physics_process(delta: float) -> void:
@@ -293,8 +298,6 @@ func _launch_pebble() -> void:
 	launch_state = LaunchState.LAUNCHED
 	cooldown_timer = 0.0
 	was_above_surface = true
-	is_skimming = false
-	skim_timer = 0.0
 
 
 func _get_power_ratio() -> float:
@@ -330,6 +333,48 @@ func _handle_water_impact() -> void:
 			" | throw_quality=", snapped(throw_quality, 0.01)
 			
 		)
+
+	if (
+		jelly_effect != null
+		and jelly_effect.has_method("is_active")
+		and jelly_effect.is_active()
+	):
+		skip_count += 1
+
+		var jelly_bounce_speed: float = clamp(
+			max(420.0, downward_speed * 1.15),
+			420.0,
+			620.0
+		)
+
+		var forward_sign: float = 1.0
+		if velocity.x < 0.0:
+			forward_sign = -1.0
+
+		if jelly_effect.has_method("trigger_jelly_impact"):
+			jelly_effect.trigger_jelly_impact(
+				global_position.x,
+				downward_speed
+		)
+
+		velocity.y = -jelly_bounce_speed
+		velocity.x = forward_sign * max(abs(velocity.x) * 1.05, 300.0)
+
+		global_position.y = water.get_surface_y_world(global_position.x) - 4.0
+
+		cooldown_timer = impact_cooldown
+		was_above_surface = true
+
+		if debug_skip_metrics:
+			print(
+				"JELLY_RESPONSE | ",
+				"bounce=", snapped(jelly_bounce_speed, 0.01),
+				" | new_vx=", snapped(abs(velocity.x), 0.01),
+				" | new_vy=", snapped(velocity.y, 0.01),
+				" | energy_after=", snapped(skip_energy, 0.01)
+			)
+
+		return
 
 	if not _can_skip(horizontal_speed, downward_speed, impact_angle, lift_quality):
 		_start_sinking()

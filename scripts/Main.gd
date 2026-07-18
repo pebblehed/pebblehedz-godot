@@ -6,14 +6,17 @@ extends Node2D
 
 @export var water_path: NodePath
 @export var pebble_path: NodePath
+@export var jelly_effect_path: NodePath
 
 var water: HookeWater2D
 var pebble: TestPebbleCharacter
+var jelly_effect: Node
 
 
 func _ready() -> void:
 	water = get_node_or_null(water_path) as HookeWater2D
 	pebble = get_node_or_null(pebble_path) as TestPebbleCharacter
+	jelly_effect = get_node_or_null(jelly_effect_path)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -26,3 +29,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			water.reset_water()
 		if pebble != null:
 			pebble.reset_pebble()
+
+	if event is InputEventKey and event.pressed and event.keycode == KEY_J:
+		if jelly_effect != null and jelly_effect.has_method("activate"):
+			jelly_effect.activate()
