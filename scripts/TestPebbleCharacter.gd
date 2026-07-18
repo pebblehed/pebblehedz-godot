@@ -513,7 +513,17 @@ func apply_lily_pad_repulsion(pad_index: int = -1) -> void:
 		" | energy_before=", energy_before,
 		" | energy_after=", skip_energy
 	)	
+func activate_blue_butterfly_slow_motion() -> void:
+	Engine.time_scale = 0.45
 
+	await get_tree().create_timer(
+		3.0,
+		true,
+		false,
+		true
+	).timeout
+
+	Engine.time_scale = 1.0
 
 func reset_pebble() -> void:
 	global_position = reset_position
