@@ -61,6 +61,17 @@ water_path = NodePath("../HookeWater2D")
 script = ExtResource("9_kek77")
 target_path = NodePath("../TestPebbleCharacter2D")
 
-[node name="EnvironmentManager" type="Node" parent="." unique_id=44379230 node_paths=PackedStringArray("pebble")]
+[node name="SkyCanvasLayer" type="CanvasLayer" parent="." unique_id=25316284]
+
+[node name="SkyRect" type="TextureRect" parent="SkyCanvasLayer" unique_id=1015662283]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EnvironmentManager" type="Node" parent="." unique_id=44379230 node_paths=PackedStringArray("pebble", "sky_canvas_layer", "sky_rect")]
 script = ExtResource("11_efxa6")
 pebble = NodePath("../TestPebbleCharacter2D")
+sky_canvas_layer = NodePath("../SkyCanvasLayer")
+sky_rect = NodePath("../SkyCanvasLayer/SkyRect")

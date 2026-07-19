@@ -8,12 +8,22 @@ extends Node
 ## - Track the pebble's forward distance travelled during a run.
 ## - Normalize that distance into environmental progression from 0.0 to 1.0.
 ## - Reset progression state for each new run.
+## - Coordinate the baseline viewport-bound sky presentation.
 ##
-## This baseline does not currently own any visual environmental behaviour.
+## This baseline does not currently own mountains, celestial bodies,
+## stars, lighting, sound, or gameplay behaviour.
 
 
 ## Pebble whose forward movement drives environmental progression.
 @export var pebble: Node2D
+
+
+## Viewport-bound background layer used for baseline sky presentation.
+@export var sky_canvas_layer: CanvasLayer
+
+
+## Full-screen rectangle used to display the procedural sky gradient.
+@export var sky_rect: TextureRect
 
 
 ## Forward distance required to reach environmental progression 1.0.
@@ -45,6 +55,7 @@ func _ready() -> void:
 		return
 
 	_connect_run_reset_notification()
+	_configure_morning_calm_sky()
 	reset_environmental_progression()
 
 
@@ -67,6 +78,52 @@ func _connect_run_reset_notification() -> void:
 
 func _on_pebble_run_reset() -> void:
 	reset_environmental_progression()
+
+
+## Establishes the baseline Morning Calm sky presentation.
+##
+## The sky is viewport-bound through CanvasLayer so it remains stable
+## during world travel and remains compatible with future camera zoom.
+func _configure_morning_calm_sky() -> void:
+	if sky_canvas_layer == null:
+		push_warning(
+			"EnvironmentManager: No sky CanvasLayer assigned. "
+			+ "Morning Calm sky cannot be configured."
+		)
+		return
+
+	if sky_rect == null:
+		push_warning(
+			"EnvironmentManager: No sky TextureRect assigned. "
+			+ "Morning Calm sky cannot be configured."
+		)
+		return
+
+	sky_canvas_layer.layer = -100
+
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([
+	Color("12366b"),
+	Color("54306f"),
+	Color("b83f78"),
+	Color("f2a23a"),
+	])
+
+	gradient.offsets = PackedFloat32Array([
+	0.0,
+	0.15,
+	0.45,
+	0.59
+	])
+
+	var gradient_texture := GradientTexture2D.new()
+	gradient_texture.gradient = gradient
+	gradient_texture.width = 1
+	gradient_texture.height = 512
+	gradient_texture.fill_from = Vector2(0.5, 0.0)
+	gradient_texture.fill_to = Vector2(0.5, 1.0)
+
+	sky_rect.texture = gradient_texture
 
 
 ## Recalculates forward distance and normalized environmental progression.
